@@ -19,14 +19,21 @@ describe Bundle::Dsl do
     expect(dsl.entries[3].name).to eql("emacs")
     expect(dsl.entries[3].options).to eql(:args => ["with-cocoa", "with-gnutls"])
     expect(dsl.entries[4].name).to eql("google-chrome")
-    expect(dsl.entries[4].options).to eql(:args => {:appdir=>"/Applications"})
+    expect(dsl.entries[4].options).to eql(:args => { :appdir=>"/Applications" })
     expect(dsl.entries[5].name).to eql("firefox")
-    expect(dsl.entries[5].options).to eql(:args => {:appdir=>"~/my-apps/Applications"})
+    expect(dsl.entries[5].options).to eql(:args => { :appdir=>"~/my-apps/Applications" })
   end
 
   it "handles invalid input" do
     allow(ARGV).to receive(:verbose?).and_return(true)
     expect { Bundle::Dsl.new "abcdef" }.to raise_error(RuntimeError)
+    expect { Bundle::Dsl.new "cask_args ''" }.to raise_error(RuntimeError)
+    expect { Bundle::Dsl.new "brew 1" }.to raise_error(RuntimeError)
+    expect { Bundle::Dsl.new "brew 'foo', ['bad_option']" }.to raise_error(RuntimeError)
+    expect { Bundle::Dsl.new "cask 1" }.to raise_error(RuntimeError)
+    expect { Bundle::Dsl.new "cask 'foo', ['bad_option']" }.to raise_error(RuntimeError)
+    expect { Bundle::Dsl.new "tap 1" }.to raise_error(RuntimeError)
+    expect { Bundle::Dsl.new "tap 'foo', ['bad_clone_target']" }.to raise_error(RuntimeError)
   end
 
   it ".sanitize_brew_name" do

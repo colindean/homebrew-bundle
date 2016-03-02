@@ -6,7 +6,7 @@ describe Bundle::BrewInstaller do
   let(:installer) { Bundle::BrewInstaller.new(formula, options) }
 
   def do_install
-    installer.install_or_upgrade
+    installer.run
   end
 
   context "restart_service option is true" do
@@ -37,11 +37,11 @@ describe Bundle::BrewInstaller do
     it "calls Homebrew" do
       Bundle::BrewInstaller.reset!
       expect(Bundle::BrewDumper).to receive(:formulae).and_return([
-        { name: "a", outdated?: true },
-        { name: "b", outdated?: true },
-        { name: "c", outdated?: false },
+        { :name => "a", :outdated? => true },
+        { :name => "b", :outdated? => true },
+        { :name => "c", :outdated? => false },
       ])
-      expect(Bundle::BrewInstaller.outdated_formulae.map{|f|f[:name]}).to eql(%w[a b])
+      expect(Bundle::BrewInstaller.outdated_formulae).to eql(%w[a b])
     end
   end
 
@@ -49,11 +49,11 @@ describe Bundle::BrewInstaller do
     it "calls Homebrew" do
       Bundle::BrewInstaller.reset!
       expect(Bundle::BrewDumper).to receive(:formulae).and_return([
-        { name: "a", pinned?: true },
-        { name: "b", pinned?: true },
-        { name: "c", pinned?: false },
+        { :name => "a", :pinned? => true },
+        { :name => "b", :pinned? => true },
+        { :name => "c", :pinned? => false },
       ])
-      expect(Bundle::BrewInstaller.pinned_formulae.map{|f|f[:name]}).to eql(%w[a b])
+      expect(Bundle::BrewInstaller.pinned_formulae).to eql(%w[a b])
     end
   end
 
@@ -143,6 +143,46 @@ describe Bundle::BrewInstaller do
             expect(do_install).to eql(true)
           end
         end
+      end
+    end
+  end
+
+  context '#changed?' do
+    it 'should be falsy by default' do
+      expect(Bundle::BrewInstaller.new(formula).changed?).to eql(nil)
+    end
+  end
+
+  context '#restart_service?' do
+    it 'should be false by default' do
+      expect(Bundle::BrewInstaller.new(formula).restart_service?).to eql(false)
+    end
+
+    context 'if a service is unchanged' do
+      before do
+        allow_any_instance_of(Bundle::BrewInstaller).to receive(:changed?).and_return(false)
+      end
+
+      it 'should be true with {restart_service: true}' do
+        expect(Bundle::BrewInstaller.new(formula, restart_service: true).restart_service?).to eql(true)
+      end
+
+      it 'should be false if {restart_service: :changed}' do
+        expect(Bundle::BrewInstaller.new(formula, restart_service: :changed).restart_service?).to eql(false)
+      end
+    end
+
+    context 'if a service is changed' do
+      before do
+        allow_any_instance_of(Bundle::BrewInstaller).to receive(:changed?).and_return(true)
+      end
+
+      it 'should be true with {restart_service: true}' do
+        expect(Bundle::BrewInstaller.new(formula, restart_service: true).restart_service?).to eql(true)
+      end
+
+      it 'should be true if {restart_service: :changed}' do
+        expect(Bundle::BrewInstaller.new(formula, restart_service: :changed).restart_service?).to eql(true)
       end
     end
   end
